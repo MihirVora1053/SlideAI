@@ -4,21 +4,19 @@ from pptx import Presentation
 from pptx.util import Inches
 import io
 from PIL import Image as PILImage
-import openai
 import re
-from dotenv import load_dotenv
 import os
+import google.generativeai as genai
+import random
 
 app = Flask(__name__)
 
 # Load environment variables from .env file
-load_dotenv()
 
 # Set your OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
+genai.configure(api_key="AIzaSyA3Xz0Q-7JsDx0qrPuUhnIJJwifttSwtIE")
 # Set your Pexels API key
-PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
+PEXELS_API_KEY = "XZmXIRIMHkUT9ZHKN9IUpxQ8INRxd9kjsKAKWuIIcQ3knYaI9ha1h5iE"
 
 @app.route('/', methods=['GET'])
 def index():
@@ -42,60 +40,103 @@ def generate_ppt():
     return send_file(ppt_file, as_attachment=True, download_name='presentation.pptx')
 
 def generate_content(prompt, num_slides, include_references):
-    response_main = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0125",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=200 * num_slides
-    )
-    main_content = response_main.choices[0].message['content'].strip()
-    slides_content = main_content.split("\n\n")[:num_slides]  # Split content into slides based on double newlines
 
-    response_conclusion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0125",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Summarize the key points covered in the following content: " + main_content}
-        ],
-        max_tokens=150
-    )
-    conclusion_content = response_conclusion.choices[0].message['content'].strip()
 
+    # Initialize the Gemini model for main content
+    model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+    # Generate main slide content
+    response_main = model.generate_content(f"{prompt}\n\nGenerate content for {num_slides} slides, formatted as separate paragraphs.")
+    
+    main_content = response_main.text.strip()
+    slides_content = main_content.split("\n\n")[:num_slides]  # Split content into slides
+
+    # Use a more advanced model for summarization and references
+    model_pro = genai.GenerativeModel(model_name="gemini-pro")
+
+    # Generate conclusion
+    response_conclusion = model_pro.generate_content(f"Summarize the key points covered in the following content:\n{main_content}")
+    conclusion_content = response_conclusion.text.strip()
+
+    # Generate references (if needed)
     references_content = ""
     if include_references:
-        response_references = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0125",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "Provide a list of references based on the discussed topics."}
-            ],
-            max_tokens=150
-        )
-        references_content = response_references.choices[0].message['content'].strip()
+        response_references = model_pro.generate_content("Provide a list of references based on the discussed topics.")
+        references_content = response_references.text.strip()
 
     return slides_content, conclusion_content, references_content
 
+
+
+# def fetch_image(query):
+#     headers = {'Authorization': PEXELS_API_KEY}
+#     params = {'query': query, 'per_page': 1}
+#     response = requests.get('https://api.pexels.com/v1/search', headers=headers, params=params)
+#     if response.status_code == 200:
+#         results = response.json()
+#         if results['photos']:
+#             image_url = results['photos'][0]['src']['original']
+#             image_response = requests.get(image_url)
+#             if image_response.status_code == 200:
+#                 image = PILImage.open(io.BytesIO(image_response.content))
+#                 return image
+#     return None
+
+# def fetch_image(query):
+#     if not PEXELS_API_KEY:
+#         print("Error: Pexels API key is missing.")
+#         return None
+
+#     headers = {'Authorization': PEXELS_API_KEY}
+#     params = {'query': request.form['title'], 'per_page': 1}
+
+#     response = requests.get('https://api.pexels.com/v1/search', headers=headers, params=params)
+
+#     if response.status_code == 200:
+#         results = response.json()
+#         if results['photos']:
+#             image_url = results['photos'][0]['src']['original']
+#             image_response = requests.get(image_url)
+
+#             if image_response.status_code == 200:
+#                 image = PILImage.open(io.BytesIO(image_response.content))
+#                 print("✅ Image fetched successfully!")
+#                 image.show()  # Display the image
+#                 return image
+
+#     print("⚠️ No image found or API request failed.")
+#     return None
+
 def fetch_image(query):
+    if not PEXELS_API_KEY:
+        print("Error: Pexels API key is missing.")
+        return None
+
     headers = {'Authorization': PEXELS_API_KEY}
-    params = {'query': query, 'per_page': 1}
+    params = {'query': request.form['title'], 'per_page': 5}  # Fetch multiple images
+
     response = requests.get('https://api.pexels.com/v1/search', headers=headers, params=params)
+
     if response.status_code == 200:
         results = response.json()
         if results['photos']:
-            image_url = results['photos'][0]['src']['original']
+            random_image = random.choice(results['photos'])  # Pick a random image
+            image_url = random_image['src']['original']
             image_response = requests.get(image_url)
+
             if image_response.status_code == 200:
                 image = PILImage.open(io.BytesIO(image_response.content))
+                print(f"✅ Random image fetched successfully: {image_url}")
+                image.show()  # Display the image
                 return image
+
+    print("⚠️ No image found or API request failed.")
     return None
 
 def add_image_to_slide(slide, image, prs):
     image_stream = io.BytesIO()
     image.save(image_stream, format='PNG')
     image_stream.seek(0)
-    slide.shapes.add_picture(image_stream, prs.slide_width - Inches(4), Inches(1), width=Inches(3), height=Inches(2))
+    slide.shapes.add_picture(image_stream, prs.slide_width - Inches(4), Inches(1), width=Inches(4), height=Inches(3))
 
 def create_ppt(slides_content, conclusion_content, references_content, presentation_title, presenter_name, template_path, include_images, num_slides):
     prs = Presentation(template_path)
@@ -148,6 +189,9 @@ def create_ppt(slides_content, conclusion_content, references_content, presentat
     file_path = 'generated_presentation_using_template.pptx'
     prs.save(file_path)
     return file_path
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
