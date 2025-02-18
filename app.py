@@ -16,7 +16,7 @@ app = Flask(__name__)
 # Set your OpenAI API key
 genai.configure(api_key="AIzaSyA3Xz0Q-7JsDx0qrPuUhnIJJwifttSwtIE")
 # Set your Pexels API key
-PEXELS_API_KEY = "XZmXIRIMHkUT9ZHKN9IUpxQ8INRxd9kjsKAKWuIIcQ3knYaI9ha1h5iE"
+# PEXELS_API_KEY = "XZmXIRIMHkUT9ZHKN9IUpxQ8INRxd9kjsKAKWuIIcQ3knYaI9ha1h5iE"
 
 @app.route('/', methods=['GET'])
 def index():
