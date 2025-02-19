@@ -35,7 +35,20 @@ def transcript_to_json(transcript):
 # Example transcript
 transcript = """
 Topic: Income Tax
-The income tax in India is a direct tax levied using a progressive slab rate system, where the tax rate increases as the taxpayer's income rises.  The Income Tax Act of 1961 provides two tax regimes: the old regime (with deductions and exemptions) and the new regime (with lower tax rates but fewer deductions). This article will explain the income tax calculation under both regimes, comparing tax slabs and highlighting key differences.  Significant changes were introduced in the new regime, applicable for the financial year 2024-25, including revised slabs, an increased standard deduction of Rs 75,000 for salaried employees, and a higher NPS contribution limit (increased to 14% from 10%).  Taxpayers can now choose between the two regimes to maximize their tax benefits.
+The income tax in India is a direct tax levied using a progressive slab rate system, where the tax rate increases as the taxpayer's income rises.  
+The income tax in India is a direct tax levied using a progressive slab rate system, where the tax rate increases as the taxpayer's income rises.  
+The income tax in India is a direct tax levied using a progressive slab rate system, where the tax rate increases as the taxpayer's income rises.  
+The Income Tax Act of 1961 provides two tax regimes: the old regime (with deductions and exemptions) and the new regime (with lower tax rates but fewer deductions). 
+This article will explain the income tax calculation under both regimes, comparing tax slabs and highlighting key differences.  
+Significant changes were introduced in the new regime, applicable for the financial year 2024-25, including revised slabs, an increased standard deduction of Rs 75,000 for salaried employees, and a higher NPS contribution limit (increased to 14% from 10%).  
+Taxpayers can now choose between the two regimes to maximize their tax benefits.
+The income tax in India is a direct tax levied using a progressive slab rate system, where the tax rate increases as the taxpayer's income rises.  
+The income tax in India is a direct tax levied using a progressive slab rate system, where the tax rate increases as the taxpayer's income rises.  
+The income tax in India is a direct tax levied using a progressive slab rate system, where the tax rate increases as the taxpayer's income rises.  
+The Income Tax Act of 1961 provides two tax regimes: the old regime (with deductions and exemptions) and the new regime (with lower tax rates but fewer deductions). 
+This article will explain the income tax calculation under both regimes, comparing tax slabs and highlighting key differences.  
+Significant changes were introduced in the new regime, applicable for the financial year 2024-25, including revised slabs, an increased standard deduction of Rs 75,000 for salaried employees, and a higher NPS contribution limit (increased to 14% from 10%).  
+Taxpayers can now choose between the two regimes to maximize their tax benefits.
 
 Topic: Introduction to AI
 Artificial Intelligence (AI) is the simulation of human intelligence in machines. 

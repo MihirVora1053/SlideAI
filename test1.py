@@ -23,8 +23,7 @@ def transcript_to_json(transcript):
         title = sections[i].strip()
         content = sections[i + 1].strip()
         sentences = sent_tokenize(content)
-        key_points = sentences[: min(5, len(sentences))]  # Limit to 5 points
-        slides.append({"title": title, "points": key_points})
+        slides.append({"title": title, "points": sentences})
 
     return slides
 
@@ -99,7 +98,6 @@ def transcript_to_json(transcript):
 #         title.text_frame.paragraphs[0].font.size = Pt(32)
 #         title.text_frame.paragraphs[0].font.bold = True
 #         title.text_frame.paragraphs[0].font.color.rgb = title_color
-        
 
 
 #         if len(slide.placeholders) > 1:
@@ -107,13 +105,12 @@ def transcript_to_json(transcript):
 #         # else:
 #         #     print("⚠️ Placeholder[1] missing, adding text box manually.")
 #         #     content = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(8), Inches(5)).text_frame
-        
+
 #         for point in slide_content["points"]:
 #             p = content.add_paragraph()
 #             p.text = point
 #             p.font.size = Pt(20)
 #             p.font.color.rgb = text_color
-
 
 
 #     ppt_stream = io.BytesIO()
@@ -146,60 +143,73 @@ def transcript_to_json(transcript):
 #     )
 
 
-
-
-
-
-
-
-
-
-
 def create_ppt(slide_data, template_path):
     prs = Presentation(template_path)
-    
+
     # Remove existing slides
     while len(prs.slides) > 0:
         xml_slides = prs.slides._sldIdLst
         prs.part.drop_rel(xml_slides[0].rId)
         del xml_slides[0]
-    
+
     title_color = RGBColor(255, 69, 0)
     text_color = RGBColor(50, 50, 50)
     background_color = RGBColor(240, 240, 240)
-    
+
+    max_chars_per_slide = 900  # Adjust as needed for fitting content
+
     for slide_content in slide_data:
-        slide_layout = prs.slide_layouts[2]  # TITLE_AND_BODY layout
-        slide = prs.slides.add_slide(slide_layout)
+        title = slide_content["title"]
+        points = slide_content["points"]
 
-        slide.background.fill.solid()
-        slide.background.fill.fore_color.rgb = background_color
+        while points:
+            slide_layout = prs.slide_layouts[2]  # TITLE_AND_BODY layout
+            slide = prs.slides.add_slide(slide_layout)
 
-        title = slide.shapes.title
-        title.text = slide_content["title"]
-        title.text_frame.paragraphs[0].font.size = Pt(32)
-        title.text_frame.paragraphs[0].font.bold = True
-        title.text_frame.paragraphs[0].font.color.rgb = title_color
-        
-        if len(slide.placeholders) > 1:
-            content = slide.placeholders[1].text_frame
-            for point in slide_content["points"]:
-                p = content.add_paragraph()
-                p.text = point
-                p.font.size = Pt(14)
-                p.font.color.rgb = text_color
-                p.font.name = "Calibri"
+            slide.background.fill.solid()
+            slide.background.fill.fore_color.rgb = background_color
+
+            slide_title = slide.shapes.title
+            slide_title.text = title
+            slide_title.text_frame.paragraphs[0].font.size = Pt(32)
+            slide_title.text_frame.paragraphs[0].font.bold = True
+            slide_title.text_frame.paragraphs[0].font.color.rgb = title_color
+
+            if len(slide.placeholders) > 1:
+                content = slide.placeholders[1].text_frame
+                remaining_points = []
+
+                char_count = 0
+                for point in points:
+                    char_count += len(point)
+
+                    if (
+                        char_count > max_chars_per_slide
+                    ):  # If exceeds space, move to next slide
+                        remaining_points.append(point)
+                    else:
+                        p = content.add_paragraph()
+                        p.text = point
+                        p.font.size = Pt(14)
+                        p.font.color.rgb = text_color
+                        p.font.name = "Calibri"
+
+                points = remaining_points  # Move extra points to the next slide
+                # title = "Continued: " + title  # Update title for continuity
 
     ppt_stream = io.BytesIO()
     prs.save(ppt_stream)
     ppt_stream.seek(0)
     return ppt_stream
 
+
 app = Flask(__name__)
+
 
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
+
 
 @app.route("/generate-ppt", methods=["POST"])
 def generate_ppt():
@@ -218,16 +228,6 @@ def generate_ppt():
         download_name="lecture_notes.pptx",
         mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation",
     )
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
