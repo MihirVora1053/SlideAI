@@ -7,6 +7,7 @@ from pptx import Presentation
 from pptx.util import Pt
 from pptx.dml.color import RGBColor
 import io
+import scraping
 
 nltk.download("punkt")  # Ensure sentence tokenizer is available
 
@@ -216,6 +217,8 @@ def generate_ppt():
     template_choice = request.form["template_choice"]
     template_path = f"presentations/{template_choice}"
     transcript = request.form["prompt"]
+    
+    # transcript = request.form["prompt"]
     slides_data = transcript_to_json(transcript)
 
     with open("slides.json", "w") as f:
@@ -229,6 +232,6 @@ def generate_ppt():
         mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation",
     )
 
-
+# print(scraping.generate_notes.refined_key_points)
 if __name__ == "__main__":
     app.run(debug=True)

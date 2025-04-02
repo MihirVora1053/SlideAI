@@ -8,9 +8,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>AI Slide Generator</h1>
+        <h1>Vid2Learn</h1>
         <form id="presentationForm">
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <label for="title">Presentation Title:</label>
                 <input type="text" name="title" id="title" placeholder="Enter presentation title" required>
             </div>
@@ -23,7 +23,7 @@
             <div class="form-group">
                 <label for="num_slides">Number of Slides:</label>
                 <input type="number" name="num_slides" id="num_slides" placeholder="Enter number of slides" min="1" required>
-            </div>
+            </div> -->
             
             <div class="form-group">
                 <label for="template_choice">Choose a Template:</label>
@@ -41,7 +41,7 @@
                 </select>
             </div>
             
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <label for="prompt">Presentation Prompt:</label>
                 <textarea name="prompt" id="prompt" placeholder="Enter your prompt here" required></textarea>
             </div>
@@ -54,7 +54,7 @@
             <div class="form-group checkbox-group">
                 <input type="checkbox" name="include_images" id="include_images">
                 <label for="include_images">Include Images</label>
-            </div>
+            </div> -->
             
             <button type="submit">Generate Presentation</button>
         </form>
@@ -63,9 +63,9 @@
         <div class="spinner"></div>
         <p>Please wait...</p>
     </div>
-    <footer>
+    <!-- <footer>
         <p>© 2024 Presentation Generator, Inc. All rights reserved.</p>
-    </footer>
+    </footer> -->
 
     <script>
         document.getElementById('presentationForm').addEventListener('submit', function(event) {
