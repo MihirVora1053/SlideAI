@@ -321,22 +321,35 @@ def transcript_to_json(transcript):
     return slides
 
 
-def generate_notes(transcript, topic):
+def generate_notes(transcript):
     """Generates notes, refines them with Gemini, and saves to a Word document."""
+    
+
+    
+    # 1. Transcript Summary
+    refined_transcript = call_gemini_api(
+        f"Refine and summarize the following transcript and give it a suitable topic name and write the content in the form 'Topic: followed by the rest of the content', also don't make any text bold:\n{transcript}"
+    )
+    
+    refined_transcript_json = transcript_to_json(refined_transcript)
+
+    
+    # print("Refined Transcript: ", refined_transcript)
+
+    with open("slides.json", "w") as f:
+        json.dump(refined_transcript_json, f, indent=4)
+    with open("slides.json", "r") as file:
+        slides_data = json.load(file)
+    topic=slides_data[0]["title"]
+    print("TOPIC::",topic)
     doc = Document()
     add_page_border(doc)  # Add border to pages
     add_headers_and_footers(doc, topic)  # Add header and footer
 
     doc.add_heading(f"Lecture Notes on {topic}", level=1)
-
-    # 1. Transcript Summary
     doc.add_heading("1. Transcript Summary", level=2)
-    refined_transcript = call_gemini_api(
-        f"Refine and summarize the following transcript and give it a suitable topic name and write the content in the form 'Topic: followed by the rest of the content', also don't make any text bold:\n{transcript}"
-    )
 
-    refined_transcript_json = transcript_to_json(refined_transcript)
-
+    print(topic)
     identify_and_bold_subtopics(
         (
             clean_text(refined_transcript)
@@ -346,11 +359,6 @@ def generate_notes(transcript, topic):
         doc,
     )
 
-    # print("Refined Transcript: ", refined_transcript)
-
-    with open("slides.json", "w") as f:
-        json.dump(refined_transcript_json, f, indent=4)
-
     # 2. Wikipedia Summary
     doc.add_heading("2. Wikipedia Summary", level=2)
     wiki_url = f"https://en.wikipedia.org/wiki/{topic.replace(' ', '_')}"
@@ -358,6 +366,7 @@ def generate_notes(transcript, topic):
     refined_wiki_content = call_gemini_api(
         f"Refine and summarize the following Wikipedia content:\n{wiki_content}"
     )
+
     identify_and_bold_subtopics(
         (
             clean_text(refined_wiki_content)
