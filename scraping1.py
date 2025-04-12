@@ -177,14 +177,14 @@ from docx.oxml.ns import qn
 from googlesearch import search
 import google.generativeai as genai
 import re
+import os
+from dotenv import load_dotenv
 
-# Configure Google Gemini API Key
-GEMINI_API_KEY = (
-    "AIzaSyDDiIZWi7KPMfb5e_ur5JhQm87_UXAk48c"  # Replace with your actual API key
-)
+load_dotenv()
+
 
 # Initialize Gemini API
-genai.configure(api_key=GEMINI_API_KEY)
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def call_gemini_api(prompt):
@@ -288,22 +288,21 @@ def identify_and_bold_subtopics(text, doc):
             if word.strip() in subtopics_list:
                 run.bold = True
 
+def generate_summary(transcript, summary_length):
+    """Generates a summary based on the selected length."""
+    if summary_length == "Short":
+        length_modifier = "30%"
+    elif summary_length == "Medium":
+        length_modifier = "50%"
+    else:  # Detailed
+        length_modifier = "keep all key information in detail."
+
+    prompt = f"Refine and summarize the following transcript to {length_modifier} of the original transcript and give it a suitable topic name and write the content in the form 'Topic: followed by the rest of the content', also don't make any text bold:\n{transcript}"
+    refined_summary = call_gemini_api(prompt)
+    print("Refined summary: ", refined_summary)
+    return refined_summary if refined_summary else transcript  # Fallback to original transcript
 
 def transcript_to_json(transcript):
-    # """Converts the refined transcript into a structured JSON format for slide creation."""
-    # slides = []
-    # sections = re.split(
-    #     r"Topic: (.+)", transcript
-    # )  # Split into sections based on 'Topic:'
-
-    # for i in range(1, len(sections), 2):
-    #     title = sections[i].strip()
-    #     content = sections[i + 1].strip()
-    #     sentences = sent_tokenize(content)
-    #     slides.append({"title": title, "points": sentences})
-
-    # return slides
-
     """Converts the refined transcript into a structured JSON format for slide creation."""
     slides = []
     # Extract the topic from the beginning of the transcript
@@ -317,31 +316,28 @@ def transcript_to_json(transcript):
     else:
         # If no "Topic: ..." is found, use the entire transcript as content
         sentences = sent_tokenize(transcript)
-        slides.append({"title": "Transcript", "points": sentences}) # or some default title.
+        slides.append(
+            {"title": "Transcript", "points": sentences}
+        )  # or some default title.
     return slides
 
 
-def generate_notes(transcript):
+def generate_notes(transcript, summary_length):
     """Generates notes, refines them with Gemini, and saves to a Word document."""
-    
 
-    
     # 1. Transcript Summary
-    refined_transcript = call_gemini_api(
-        f"Refine and summarize the following transcript and give it a suitable topic name and write the content in the form 'Topic: followed by the rest of the content', also don't make any text bold:\n{transcript}"
-    )
-    
+    refined_transcript = generate_summary(transcript, summary_length)
+
     refined_transcript_json = transcript_to_json(refined_transcript)
 
-    
     # print("Refined Transcript: ", refined_transcript)
 
     with open("slides.json", "w") as f:
         json.dump(refined_transcript_json, f, indent=4)
     with open("slides.json", "r") as file:
         slides_data = json.load(file)
-    topic=slides_data[0]["title"]
-    print("TOPIC::",topic)
+    topic = slides_data[0]["title"]
+    print("TOPIC::", topic)
     doc = Document()
     add_page_border(doc)  # Add border to pages
     add_headers_and_footers(doc, topic)  # Add header and footer
@@ -360,38 +356,38 @@ def generate_notes(transcript):
     )
 
     # 2. Wikipedia Summary
-    doc.add_heading("2. Wikipedia Summary", level=2)
-    wiki_url = f"https://en.wikipedia.org/wiki/{topic.replace(' ', '_')}"
-    wiki_content = scrape_web_content(wiki_url)
-    refined_wiki_content = call_gemini_api(
-        f"Refine and summarize the following Wikipedia content:\n{wiki_content}"
-    )
+    # doc.add_heading("2. Wikipedia Summary", level=2)
+    # wiki_url = f"https://en.wikipedia.org/wiki/{topic.replace(' ', '_')}"
+    # wiki_content = scrape_web_content(wiki_url)
+    # refined_wiki_content = call_gemini_api(
+    #     f"Refine and summarize the following Wikipedia content:\n{wiki_content}"
+    # )
 
-    identify_and_bold_subtopics(
-        (
-            clean_text(refined_wiki_content)
-            if refined_wiki_content
-            else clean_text(wiki_content)
-        ),
-        doc,
-    )
+    # identify_and_bold_subtopics(
+    #     (
+    #         clean_text(refined_wiki_content)
+    #         if refined_wiki_content
+    #         else clean_text(wiki_content)
+    #     ),
+    #     doc,
+    # )
 
     # 3. Additional Web Content
-    doc.add_heading("3. Additional Web Content", level=2)
-    related_links = search_google_free(topic, num_results=3)
-    for link in related_links:
-        web_content = scrape_web_content(link)
-        refined_web_content = call_gemini_api(
-            f"Refine and summarize the following article and add some additional information:\n{web_content}"
-        )
-        identify_and_bold_subtopics(
-            (
-                clean_text(refined_web_content)
-                if refined_web_content
-                else clean_text(web_content)
-            ),
-            doc,
-        )
+    # doc.add_heading("3. Additional Web Content", level=2)
+    # related_links = search_google_free(topic, num_results=3)
+    # for link in related_links:
+    #     web_content = scrape_web_content(link)
+    #     refined_web_content = call_gemini_api(
+    #         f"Refine and summarize the following article and add some additional information:\n{web_content}"
+    #     )
+    #     identify_and_bold_subtopics(
+    #         (
+    #             clean_text(refined_web_content)
+    #             if refined_web_content
+    #             else clean_text(web_content)
+    #         ),
+    #         doc,
+    #     )
 
     # 4. Key Takeaways
     doc.add_heading("4. Key Takeaways", level=2)
@@ -410,13 +406,21 @@ def generate_notes(transcript):
     )
 
     # Sources
-    doc.add_heading("Sources", level=2)
-    for source in related_links:
-        doc.add_paragraph(f"- {source}")
+    # doc.add_heading("Sources", level=2)
+    # for source in related_links:
+    #     doc.add_paragraph(f"- {source}")
 
-    filename = "Detailed_Lecture_Notes.docx"
-    doc.save(filename)
-    print(f"✅ Notes saved as {filename}")
+    # filename = "Detailed_Lecture_Notes.docx"
+    # doc.save(filename)
+
+    # Save document in memory
+    notes_stream = BytesIO()
+    doc.save(notes_stream)
+    notes_stream.seek(0)
+
+    return notes_stream
+
+    # print(f"✅ Notes saved as {filename}")
 
 
 # if __name__ == "__main__":
