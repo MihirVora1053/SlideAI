@@ -213,6 +213,31 @@ def scrape_web_content(url):
         print(f"Error scraping {url}: {e}")
         return "Content not available"
 
+def clean_geeksforgeeks_content(raw_content):
+    """
+    Cleans raw GFG content by removing markdown headers, asterisks, and excess backticks.
+    Also handles spacing for code blocks.
+    """
+    lines = raw_content.strip().split("\n")
+    cleaned_lines = []
+
+    for line in lines:
+        # Remove markdown bold (**), headers (###, ####), and bullet markers (*)
+        line = re.sub(r"\*{1,2}(.*?)\*{1,2}", r"\1", line)
+        line = re.sub(r"^#+\s*", "", line)
+        line = re.sub(r"^\*+\s*", "- ", line)
+
+        # Strip leading/trailing whitespace
+        stripped = line.strip()
+
+        if stripped == "```python" or stripped == "```":
+            cleaned_lines.append("")  # spacing before/after code blocks
+        elif not stripped:
+            cleaned_lines.append("")
+        else:
+            cleaned_lines.append(stripped)
+
+    return "\n".join(cleaned_lines)
 
 def clean_text(text):
     """Removes unnecessary characters and extra spaces from text."""
@@ -288,6 +313,27 @@ def identify_and_bold_subtopics(text, doc):
             if word.strip() in subtopics_list:
                 run.bold = True
 
+def add_geeksforgeeks_content(topic, doc):
+    """
+    Uses Gemini to fetch GeeksforGeeks content on the topic and insert it into the document,
+    cleaned of markdown and extraneous text.
+    """
+    prompt = (
+        f"Extract content directly from GeeksforGeeks about the topic '{topic}'. "
+        f"Return only the actual content (no summaries, intros, or explanations about what you're doing). "
+        f"Do not prepend or append anything. Preserve code snippets and examples as they appear."
+    )
+    gfg_raw = call_gemini_api(prompt)
+    gfg_cleaned = clean_geeksforgeeks_content(gfg_raw)
+
+    if gfg_cleaned:
+        doc.add_heading("3. GeeksforGeeks Content", level=2)
+        for paragraph in gfg_cleaned.split("\n"):
+            if paragraph.strip():
+                doc.add_paragraph(paragraph.strip())
+    else:
+        doc.add_paragraph("Could not retrieve content from GeeksforGeeks.")
+        
 def generate_summary(transcript, summary_length):
     """Generates a summary based on the selected length."""
     if summary_length == "Short":
@@ -354,6 +400,24 @@ def generate_notes(transcript, summary_length):
         ),
         doc,
     )
+    add_geeksforgeeks_content(topic, doc)
+# def add_geeksforgeeks_content(topic, doc):
+#     """Uses Gemini to fetch GeeksforGeeks content for the topic and insert it into the document without modifying it."""
+#     prompt = (
+#         f"Search GeeksforGeeks for an article on the topic '{topic}' and extract the most relevant content. "
+#         f"Return only the exact content from the article without modifying any word. Do not summarize or refine. "
+#         f"Only include educational content, not website elements or advertisements."
+#     )
+#     gfg_content = call_gemini_api(prompt)
+
+#     if gfg_content:
+#         doc.add_heading("3. GeeksforGeeks Content", level=2)
+#         for paragraph in gfg_content.split("\n"):
+#             if paragraph.strip():
+#                 doc.add_paragraph(paragraph.strip())
+#     else:
+#         doc.add_paragraph("Could not retrieve content from GeeksforGeeks.")
+
 
     # 2. Wikipedia Summary
     # doc.add_heading("2. Wikipedia Summary", level=2)
