@@ -72,7 +72,7 @@ def create_ppt(slide_data, template_path):
     text_color = RGBColor(50, 50, 50)
     background_color = RGBColor(240, 240, 240)
 
-    max_chars_per_slide = 900  # Adjust content limit per slide
+    max_chars_per_slide = 700  # Adjust content limit per slide
     
     for slide_content in slide_data:
         title = slide_content["title"]
