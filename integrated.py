@@ -21,25 +21,6 @@ def load_model():
 tokenizer, model = load_model()
 AudioSegment.converter = "/path/to/ffmpeg"
 
-# def process_audio(file_path):
-#     try:
-#         temp_file_path = "temp_uploaded_audio.wav"
-#         with open(temp_file_path, "wb") as f:
-#             f.write(file_path.read())
-        
-#         audio = AudioSegment.from_file(temp_file_path)
-#         mono_audio = audio.set_channels(1)
-#         converted_audio_path = "temp_audio.wav"
-#         mono_audio.export(converted_audio_path, format="wav")
-        
-#         recognizer = sr.Recognizer()
-#         with sr.AudioFile(converted_audio_path) as source:
-#             audio_data = recognizer.record(source)
-#             transcribed_text = recognizer.recognize_google(audio_data)
-        
-#         return transcribed_text
-#     except Exception as e:
-#         return f"Error processing audio: {e}"
 
 def process_audio(file_path):
     try:
@@ -80,16 +61,8 @@ def process_audio(file_path):
         return f"Error processing audio: {e}"
 
 
-# def summarize_text(text):
-#     input_ids = tokenizer(f"summarize: {text}", return_tensors='pt').input_ids
-#     outputs = model.generate(input_ids, max_length=130, min_length=30, length_penalty=2.0, num_beams=4)
-#     return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-def generate_ppt_and_notes(transcript, selected_template):
-    # summary = summarize_text(transcript)
-    
+def generate_ppt_and_notes(transcript, selected_template):    
     template_path = f"presentations/{selected_template}"
-    # print("Template", template_path)
     filepath = "slides.json"
     notes_file = scraping1.generate_notes(transcript, summary_length)
 
@@ -143,7 +116,7 @@ def create_ppt(slide_data, template_path):
                     else:
                         p = content.add_paragraph()
                         p.text = point
-                        p.font.size = Pt(14)
+                        p.font.size = Pt(16)
                         p.font.color.rgb = text_color
                         p.font.name = "Calibri"
 
@@ -186,12 +159,11 @@ if st.button("Generate PPT"):
             transcribed_text = process_audio(uploaded_file)
             if transcribed_text and not transcribed_text.startswith("Error"):
                 ppt_file, notes_file = generate_ppt_and_notes(transcribed_text, selected_template)
+
                 # Store files in session state
                 st.session_state.ppt_file = ppt_file
                 st.session_state.notes_file = notes_file
                 st.success("Lecture notes and presentation generated successfully!")
-                # st.download_button("Download Presentation", ppt_file, file_name="lecture_notes.pptx")
-                # st.download_button("Download Notes", notes_file, file_name="lecture_notes.docx")
             else:
                 st.error(transcribed_text)
     else:
