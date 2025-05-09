@@ -410,7 +410,7 @@ def add_geeksforgeeks_content(topic, doc):
     lines = gfg_raw.strip().split("\n", 1)
     # article_url = lines[0].strip()
     # article_url = "https://www.geeksforgeeks.org/agile-software-process-and-its-principles/"
-    article_url = "https://www.geeksforgeeks.org/introduction-of-object-oriented-programming/"
+    article_url = "https://www.geeksforgeeks.org/generative-adversarial-network-gan/"
     print("Article URL: ", article_url)
     scrape_gfg_images(article_url, doc)
     # doc.add_picture(f"images/gfg_img_1", width=Inches(5))

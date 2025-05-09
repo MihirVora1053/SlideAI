@@ -21,25 +21,64 @@ def load_model():
 tokenizer, model = load_model()
 AudioSegment.converter = "/path/to/ffmpeg"
 
+# def process_audio(file_path):
+#     try:
+#         temp_file_path = "temp_uploaded_audio.wav"
+#         with open(temp_file_path, "wb") as f:
+#             f.write(file_path.read())
+        
+#         audio = AudioSegment.from_file(temp_file_path)
+#         mono_audio = audio.set_channels(1)
+#         converted_audio_path = "temp_audio.wav"
+#         mono_audio.export(converted_audio_path, format="wav")
+        
+#         recognizer = sr.Recognizer()
+#         with sr.AudioFile(converted_audio_path) as source:
+#             audio_data = recognizer.record(source)
+#             transcribed_text = recognizer.recognize_google(audio_data)
+        
+#         return transcribed_text
+#     except Exception as e:
+#         return f"Error processing audio: {e}"
+
 def process_audio(file_path):
     try:
         temp_file_path = "temp_uploaded_audio.wav"
         with open(temp_file_path, "wb") as f:
             f.write(file_path.read())
-        
+
         audio = AudioSegment.from_file(temp_file_path)
         mono_audio = audio.set_channels(1)
         converted_audio_path = "temp_audio.wav"
         mono_audio.export(converted_audio_path, format="wav")
-        
+
         recognizer = sr.Recognizer()
-        with sr.AudioFile(converted_audio_path) as source:
-            audio_data = recognizer.record(source)
-            transcribed_text = recognizer.recognize_google(audio_data)
-        
-        return transcribed_text
+        transcribed_text = ""
+
+        # Split into 30-second chunks
+        chunk_length_ms = 30 * 1000  # 30 seconds
+        chunks = [mono_audio[i:i + chunk_length_ms] for i in range(0, len(mono_audio), chunk_length_ms)]
+
+        for i, chunk in enumerate(chunks):
+            chunk_path = f"chunk_{i}.wav"
+            chunk.export(chunk_path, format="wav")
+
+            with sr.AudioFile(chunk_path) as source:
+                audio_data = recognizer.record(source)
+                try:
+                    text = recognizer.recognize_google(audio_data)
+                    transcribed_text += text + " "
+                except sr.UnknownValueError:
+                    continue  # Skip unrecognized chunks
+                except sr.RequestError as e:
+                    return f"API error during chunk {i}: {e}"
+
+            os.remove(chunk_path)
+
+        return transcribed_text.strip()
     except Exception as e:
         return f"Error processing audio: {e}"
+
 
 # def summarize_text(text):
 #     input_ids = tokenizer(f"summarize: {text}", return_tensors='pt').input_ids
@@ -72,7 +111,7 @@ def create_ppt(slide_data, template_path):
     text_color = RGBColor(50, 50, 50)
     background_color = RGBColor(240, 240, 240)
 
-    max_chars_per_slide = 700  # Adjust content limit per slide
+    max_chars_per_slide = 550  # Adjust content limit per slide
     
     for slide_content in slide_data:
         title = slide_content["title"]
